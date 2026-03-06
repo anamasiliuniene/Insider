@@ -1,11 +1,99 @@
 from datetime import date, datetime, timedelta
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
-from django.db.models import Sum, F
-
+from django.contrib.auth import login
 from .models import Address, SessionApproval, WorkSession
+from django.shortcuts import render
+from .forms import InvitationSendForm, InvitationAcceptForm
+import secrets
+from django.core.mail import send_mail
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse
+from .models import Invitation
 
+
+@login_required
+def send_invitation(request):
+    if request.method == 'POST':
+        form = InvitationSendForm(request.POST)
+        if form.is_valid():
+            invitation = form.save(commit=False)
+            # Generate a unique token
+            invitation.token = secrets.token_urlsafe(32)
+            invitation.accepted = False
+            invitation.save()
+
+            # Build invitation link
+            invite_url = request.build_absolute_uri(
+                reverse('accept_invite', args=[invitation.token])
+            )
+
+            # Send the email
+            send_mail(
+                'You are invited to Worktime App',
+                f'Click here to set up your account: {invite_url}',
+                'noreply@yourapp.com',
+                [invitation.email],
+            )
+
+            return redirect('invitations_list')
+    else:
+        form = InvitationSendForm()  # ✅ correct form here
+    return render(request, 'insider/send_invitation.html', {'form': form})
+
+@login_required
+def resend_invitation(request, invitation_id):
+    # Only managers/admins can resend
+    if request.user.role not in ["manager", "admin"]:
+        return redirect("sessions")
+
+    invitation = get_object_or_404(Invitation, id=invitation_id)
+
+    # Build invitation link
+    invite_url = request.build_absolute_uri(
+        reverse('accept_invite', args=[invitation.token])
+    )
+
+    # Send the email again
+    send_mail(
+        'You are invited to Worktime App',
+        f'Click here to set up your account: {invite_url}',
+        'noreply@yourapp.com',
+        [invitation.email],
+    )
+
+    return redirect('invitations_list')
+
+def accept_invite(request, token):
+    invitation = get_object_or_404(Invitation, token=token, accepted=False)
+    if request.method == 'POST':
+        form = InvitationAcceptForm(request.POST, request.FILES)
+        if form.is_valid():
+            user = form.save(commit=False)
+            user.email = invitation.email
+            user.role = 'worker'  # default role for invited users
+            user.save()
+            invitation.accepted = True
+            invitation.save()
+            login(request, user)
+            return redirect('dashboard')
+    else:
+        form = InvitationAcceptForm()  # ✅ correct form here
+    return render(request, 'insider/invite.html', {'form': form})
+
+
+@login_required
+def invitations_list(request):
+    # Only allow managers/admins
+    if request.user.role not in ["manager", "admin"]:
+        return redirect("sessions")
+
+    invitations = Invitation.objects.all().order_by("-created_at")
+
+    context = {
+        "invitations": invitations,
+    }
+    return render(request, "insider/invitations_list.html", context)
 
 # ----------------------
 # Home / Landing Redirect
@@ -204,3 +292,5 @@ def reject_session(request, session_id):
     )
 
     return redirect("sessions")
+
+

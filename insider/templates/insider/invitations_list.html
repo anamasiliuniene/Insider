@@ -1,0 +1,43 @@
+{% extends "insider/base.html" %}
+
+{% block title %}Invitations{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Invitations</h2>
+    <a href="{% url 'send_invitation' %}" class="btn btn-primary mb-3">Send New Invitation</a>
+
+    <table class="table table-bordered table-hover">
+        <thead>
+        <tr>
+            <th>Email</th>
+            <th>Token</th>
+            <th>Accepted</th>
+            <th>Invited By</th>
+            <th>Created At</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for invite in invitations %}
+        <tr class="{% if not invite.accepted %}table-warning{% else %}table-success{% endif %}">
+            <td>{{ invite.email }}</td>
+            <td>{{ invite.token }}</td>
+            <td>{{ invite.accepted }}</td>
+            <td>{{ invite.invited_by.get_full_name }}</td>
+            <td>{{ invite.created_at|date:"Y-m-d H:i" }}</td>
+            <td>
+                {% if not invite.accepted %}
+                <a href="{% url 'resend_invitation' invite.id %}" class="btn btn-sm btn-info">Resend Invite</a>
+                {% endif %}
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="6" class="text-center">No invitations yet.</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

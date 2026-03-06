@@ -1,10 +1,11 @@
 from datetime import datetime, timedelta
 from decimal import Decimal, ROUND_HALF_UP
-
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.contrib.auth import login
 
 
 class User(AbstractUser):
@@ -194,3 +195,10 @@ class SessionApproval(models.Model):
             self.session.status = "pending"
         self.session.save(update_fields=["status"])
         return super().save(*args, **kwargs)
+
+class Invitation(models.Model):
+    email = models.EmailField(unique=True)
+    token = models.CharField(max_length=64, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    invited_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    accepted = models.BooleanField(default=False)
