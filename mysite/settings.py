@@ -12,6 +12,8 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'crispy_forms',
+    "crispy_bootstrap5",
     'insider',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -40,6 +42,7 @@ TEMPLATES = [
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
+                'insider.context_processors.current_year',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
@@ -104,3 +107,11 @@ try:
     from .my_settings import *  # noqa
 except ImportError:
     pass
+
+
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+CRISPY_TEMPLATE_PACK = "bootstrap5"
+
+LOGIN_URL = "login"
+LOGIN_REDIRECT_URL = "sessions"
+LOGOUT_REDIRECT_URL = "login"

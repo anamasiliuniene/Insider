@@ -1,0 +1,50 @@
+{% load static %}
+
+<aside class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
+
+    <!-- Brand -->
+    <a class="sidebar-brand d-flex align-items-center justify-content-center" href="{% url 'home' %}">
+        <div class="sidebar-brand-text mx-3">Insider</div>
+    </a>
+
+    <hr class="sidebar-divider my-0">
+
+    <!-- Sessions -->
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'sessions' %}">
+            <i class="fas fa-fw fa-clock"></i>
+            <span>Sessions</span>
+        </a>
+    </li>
+
+    <!-- Reports (optional, future) -->
+    <li class="nav-item">
+        <a class="nav-link" href="#">
+            <i class="fas fa-fw fa-chart-area"></i>
+            <span>Reports</span>
+        </a>
+    </li>
+
+    <hr class="sidebar-divider">
+
+    <!-- Admin panel (manager or superuser only) -->
+    {% if user.is_superuser or user.role == 'manager' %}
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'admin:index' %}">
+            <i class="fas fa-fw fa-cogs"></i>
+            <span>Admin</span>
+        </a>
+    </li>
+    {% endif %}
+
+    <hr class="sidebar-divider d-none d-md-block">
+
+    <!-- Logout -->
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'logout' %}">
+            <i class="fas fa-fw fa-sign-out-alt"></i>
+            <span>Logout</span>
+        </a>
+    </li>
+
+</aside>

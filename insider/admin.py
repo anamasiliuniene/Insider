@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from .models import Object, SessionApproval, User, WorkSession
+from .models import Address, SessionApproval, User, WorkSession
 
 
 @admin.register(User)
@@ -13,18 +13,18 @@ class UserAdmin(BaseUserAdmin):
     )
 
 
-@admin.register(Object)
-class ObjectAdmin(admin.ModelAdmin):
+@admin.register(Address)
+class AddressAdmin(admin.ModelAdmin):
     list_display = ("address", "latitude", "longitude", "allowed_radius")
     search_fields = ("address",)
 
 
 @admin.register(WorkSession)
 class WorkSessionAdmin(admin.ModelAdmin):
-    list_display = ("id", "worker", "object", "check_in", "check_out", "status", "payment")
-    list_filter = ("status", "object", "worker")
-    search_fields = ("worker__username", "object__address")
-
+    list_display = ("id", "worker", "address", "check_in", "check_out", "status", "payment")
+    list_filter = ("status", "address", "worker")
+    search_fields = ("worker__username", "address__address")
+    ordering = ("-check_in",)
 
 @admin.register(SessionApproval)
 class SessionApprovalAdmin(admin.ModelAdmin):

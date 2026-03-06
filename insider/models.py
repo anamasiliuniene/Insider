@@ -1,4 +1,4 @@
-from datetime import datetime, time, timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 
 from django.contrib.auth.models import AbstractUser
@@ -16,11 +16,11 @@ class User(AbstractUser):
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="worker")
 
 
-class Object(models.Model):
+class Address(models.Model):
     address = models.CharField(max_length=255)
     latitude = models.FloatField()
     longitude = models.FloatField()
-    allowed_radius = models.FloatField(default=100)  # meters for GPS validation
+    allowed_radius = models.FloatField(default=100)
 
     def __str__(self):
         return self.address
@@ -28,12 +28,12 @@ class Object(models.Model):
 
 class WorkSessionQuerySet(models.QuerySet):
     def by_week(self, week_start_date):
-        week_start = timezone.make_aware(datetime.combine(week_start_date, time.min))
+        week_start = timezone.make_aware(datetime.combine(week_start_date, datetime.min.time()))
         week_end = week_start + timedelta(days=7)
         return self.filter(check_in__gte=week_start, check_in__lt=week_end)
 
-    def by_address(self, address):
-        return self.filter(object__address__icontains=address)
+    def by_location(self, location):
+        return self.filter(address__address__icontains=location)
 
     def by_worker(self, worker):
         return self.filter(worker=worker)
@@ -43,11 +43,11 @@ class WorkSession(models.Model):
     STATUS_CHOICES = [
         ("verified", "Verified"),
         ("pending", "Pending approval"),
-        ("rejected", "Rejected")
+        ("rejected", "Rejected"),
     ]
 
     worker = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sessions")
-    object = models.ForeignKey(Object, on_delete=models.CASCADE, related_name="sessions")
+    address = models.ForeignKey(Address, on_delete=models.CASCADE, related_name="sessions")
 
     check_in = models.DateTimeField()
     check_in_latitude = models.FloatField()
@@ -64,13 +64,14 @@ class WorkSession(models.Model):
     last_edited_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="edited_sessions")
     last_edited_at = models.DateTimeField(null=True, blank=True)
 
-    hourly_rate = models.DecimalField(max_digits=7, decimal_places=2, default=15.0)  # for payment calculation
+    hourly_rate = models.DecimalField(max_digits=7, decimal_places=2, default=15.0)
+
     objects = WorkSessionQuerySet.as_manager()
 
     class Meta:
         indexes = [
             models.Index(fields=["worker", "check_in"]),
-            models.Index(fields=["object", "check_in"]),
+            models.Index(fields=["address", "check_in"]),
             models.Index(fields=["status"]),
         ]
 
@@ -80,6 +81,24 @@ class WorkSession(models.Model):
         if timezone.is_naive(parsed):
             return timezone.make_aware(parsed, timezone.get_current_timezone())
         return parsed
+
+    @property
+    def duration(self):
+        """Total hours minus breaks"""
+        if not self.check_out:
+            return Decimal("0")
+        total_seconds = Decimal(str((self.check_out - self.check_in).total_seconds()))
+        for b in self.breaks:
+            start = self._parse_break_dt(b["start"])
+            end = self._parse_break_dt(b["end"])
+            total_seconds -= Decimal(str((end - start).total_seconds()))
+        if total_seconds <= 0:
+            return Decimal("0")
+        return total_seconds / Decimal("3600")
+
+    @property
+    def payment(self):
+        return (self.duration * self.hourly_rate).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
     @property
     def status_color(self):
@@ -145,24 +164,6 @@ class WorkSession(models.Model):
                 self.status = "pending"
         self.full_clean()
         return super().save(*args, **kwargs)
-
-    @property
-    def duration(self):
-        """Total hours minus breaks"""
-        if not self.check_out:
-            return Decimal("0")
-        total_seconds = Decimal(str((self.check_out - self.check_in).total_seconds()))
-        for b in self.breaks:
-            start = self._parse_break_dt(b["start"])
-            end = self._parse_break_dt(b["end"])
-            total_seconds -= Decimal(str((end - start).total_seconds()))
-        if total_seconds <= 0:
-            return Decimal("0")
-        return total_seconds / Decimal("3600")
-
-    @property
-    def payment(self):
-        return (self.duration * self.hourly_rate).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
 class SessionApproval(models.Model):

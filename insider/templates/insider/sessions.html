@@ -1,0 +1,106 @@
+{% extends "insider/base.html" %}
+{% load static %}
+
+{% block title %}Sessions{% endblock %}
+
+{% block content %}
+<div class="row">
+
+    <!-- Active Session Card -->
+    <div class="col-xl-4 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Active Session</div>
+                <div class="h5 mb-0 font-weight-bold text-gray-800">
+                    {% if active_session %}
+                    {{ active_session.address.address }} <br>
+                    Started at: {{ active_session.check_in|date:"H:i d-m-Y" }}
+                    {% else %}
+                    No active session
+                    {% endif %}
+                </div>
+                {% if not active_session %}
+                <div class="mt-2">
+                    {% for addr in available_addresses %}
+                    <a href="{% url 'check_in' address_id=addr.id %}" class="btn btn-primary btn-sm mb-1">
+                        Check In: {{ addr.address }}
+                    </a><br>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <a href="{% url 'check_out' session_id=active_session.id %}" class="btn btn-danger mt-2">Check Out</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Session History Table -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Session History</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered" id="sessionsTable" width="100%" cellspacing="0">
+                <thead>
+                <tr>
+                    <th>Worker</th>
+                    <th>Address</th>
+                    <th>Check In</th>
+                    <th>Check Out</th>
+                    <th>Duration (h)</th>
+                    <th>Payment</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for session in sessions %}
+                <tr class="{{ session.row_class }}">
+                    <td>{{ session.worker.username }}</td>
+                    <td>{{ session.address.address }}</td>
+                    <td>{{ session.check_in|date:"H:i d-m-Y" }}</td>
+                    <td>{% if session.check_out %}{{ session.check_out|date:"H:i d-m-Y" }}{% else %}-{% endif %}</td>
+                    <td>{{ session.duration }}</td>
+                    <td>${{ session.payment|floatformat:2 }}</td>
+                    <td>
+        <span class="badge
+            {% if session.status == 'verified' %}bg-success
+            {% elif session.status == 'pending' %}bg-warning
+            {% else %}bg-danger{% endif %}">
+            {{ session.status|capfirst }}
+        </span>
+                    </td>
+                    <td>
+                        {% if user.is_superuser or user.role == 'admin' %}
+                        <a href="{% url 'edit_session' session_id=session.id %}" class="btn btn-sm btn-secondary mb-1">Edit</a>
+                        {% elif user.role == 'worker' and user.pk == session.worker.pk %}
+                        <a href="{% url 'edit_session' session_id=session.id %}" class="btn btn-sm btn-secondary mb-1">Edit</a>
+                        {% endif %}
+
+                        {% if user.role in allowed_roles and session.status == 'pending' %}
+                        <a href="{% url 'approve_session' session_id=session.id %}" class="btn btn-sm btn-success mb-1">Approve</a>
+                        <a href="{% url 'reject_session' session_id=session.id %}" class="btn btn-sm btn-danger mb-1">Reject</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        $('#sessionsTable').DataTable({
+            "order": [[2, "desc"]],  // Default sorting by Check In descending
+            "pageLength": 10
+        });
+    });
+</script>
+{% endblock %}

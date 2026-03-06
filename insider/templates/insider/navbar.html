@@ -1,0 +1,45 @@
+{% load static %}
+
+<nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+
+    <!-- Sidebar Toggle (Topbar for mobile) -->
+    <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
+        <i class="fa fa-bars"></i>
+    </button>
+
+    <!-- Topbar Navbar -->
+    <ul class="navbar-nav ml-auto">
+
+        <!-- Active Session Button (workers only) -->
+        {% if user.role == 'worker' %}
+        <li class="nav-item">
+            {% if active_session %}
+            <form method="post" action="{% url 'check_out' active_session.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-warning btn-sm mr-3">
+                    Check Out
+                </button>
+            </form>
+            {% else %}
+            <div class="dropdown mr-3">
+                <span class="btn btn-success btn-sm disabled">No Active Session</span>
+            </div>
+            {% endif %}
+        </li>
+        {% endif %}
+
+        <!-- Greeting -->
+        <li class="nav-item dropdown no-arrow">
+            <span class="nav-link">Hello, {{ user.username }}!</span>
+        </li>
+
+        <!-- Logout (optional dropdown for profile) -->
+        <li class="nav-item dropdown no-arrow">
+            <a class="nav-link" href="{% url 'logout' %}">
+                <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
+                Logout
+            </a>
+        </li>
+
+    </ul>
+</nav>
