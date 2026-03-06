@@ -1,4 +1,5 @@
 {% load static %}
+{% load humanize %}
 
 <aside class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
 
@@ -38,6 +39,15 @@
     {% endif %}
 
     <hr class="sidebar-divider d-none d-md-block">
+
+    {% if user.role == 'manager' or user.role == 'admin' %}
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'invitations_list' %}">
+            <i class="fas fa-fw fa-envelope"></i>
+            <span>Invite</span>
+        </a>
+    </li>
+    {% endif %}
 
     <!-- Logout -->
     <li class="nav-item">

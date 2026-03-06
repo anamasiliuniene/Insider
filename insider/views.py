@@ -104,7 +104,7 @@ def home(request):
     - Worker or Manager → session list
     - Others (e.g., admin) → Django admin
     """
-    if request.user.role in ["worker", "manager"]:
+    if request.user.role in ["worker", "manager", "admin"]:
         return redirect("sessions")
     return redirect("/admin/")
 
@@ -213,7 +213,8 @@ def session_list(request):
         "sessions": session_data,
         "active_session": active_session,
         "available_addresses": available_addresses,
-        "allowed_roles": ["manager", "admin"],  # for buttons
+        "allowed_roles": ["manager", "admin"],
+        "show_invite_link": user.role in ["manager", "admin"],# for buttons
     }
 
     return render(request, "insider/sessions.html", context)

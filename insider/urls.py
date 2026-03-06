@@ -44,9 +44,9 @@ urlpatterns = [
     path("sessions/<int:session_id>/reject/", views.reject_session, name="reject_session"),
 
     # Invitations
+    # Invitations
+    path("invitations/", views.invitations_list, name="invitations_list"),
     path("invitations/send/", views.send_invitation, name="send_invitation"),
     path("invitations/accept/<str:token>/", views.accept_invite, name="accept_invite"),
-    path("invitations/list/", views.invitations_list, name="invitations_list"),
-    path("invitations/", views.invitations_list, name="invitations_list"),
     path("invitations/<int:invitation_id>/resend/", views.resend_invitation, name="resend_invitation"),
 ]
